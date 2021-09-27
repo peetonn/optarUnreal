@@ -8,12 +8,15 @@
 
 #include "OptarWorker.h"
 #include "ARPin.h"
+#include "ARTypes.h"
 #include "GoogleARCoreCameraImage.h"
 #include "GoogleARCoreFunctionLibrary.h"
 #include "GoogleARCoreCameraIntrinsics.h"
 #include "GenericPlatform/GenericPlatformMisc.h"
 
 #include <stdio.h>
+#include <cstdio>
+#include <cstring>
 
 using namespace std;
 using namespace optar;
@@ -25,11 +28,11 @@ void optarLibraryLog(const char* msg)
     GLog->Logf(TEXT("[optar-module-lib] %s"), ANSI_TO_TCHAR(msg));
 }
 
-#if PLATFORM_ANDROID
+#if PLATFORM_ANDROID || PLATFORM_IOS
 void UOptarWorker::optarOnNewTransform(const Transform& t, int64_t tsUsec, void *userData)
 {
     UOptarWorker* optarWorker = (UOptarWorker*)userData;
-    
+
     if (optarWorker)
     {
         optarWorker->onNewOptarTransform(t, tsUsec);
@@ -40,9 +43,9 @@ void UOptarWorker::optarOnNewTransform(const Transform& t, int64_t tsUsec, void 
 UOptarWorker*
 UOptarWorker::sharedInstance()
 {
-#if PLATFORM_ANDROID
+#if PLATFORM_ANDROID || PLATFORM_IOS
     GLog->Logf(TEXT("[optar-module] get singleton"));
-    
+
     static UOptarWorker* singleton = nullptr;
     if (!singleton)
     {
@@ -61,52 +64,75 @@ UOptarWorker::GetDefaultWorker()
 }
 
 FString UOptarWorker::getOptarVersion() {
-#if PLATFORM_ANDROID
+#if PLATFORM_ANDROID || PLATFORM_IOS
     return optar::getLibraryVersion();
 #else
     return "not supported";
 #endif
-    
+
 }
 
-UOptarWorker::UOptarWorker(){
-#if PLATFORM_ANDROID
+UOptarWorker::UOptarWorker() : initialized_(false){
+#if PLATFORM_ANDROID || PLATFORM_IOS
     GLog->Logf(TEXT("[optar-module] UOptarWorker ctor %x id %d name %s"), this,
                this->GetUniqueID(), (*(this->GetFName().ToString())));
-    
+
     registerLogCallback(optarLibraryLog);
-    initOptarClient();
 #endif
 }
 
 UOptarWorker::~UOptarWorker()
 {
-#if PLATFORM_ANDROID
+#if PLATFORM_ANDROID || PLATFORM_IOS
     GLog->Logf(TEXT("[optar-module] UOptarWorker dtor %x"), this);
+#endif
+}
+
+void UOptarWorker::init(FString serverIpAddress)
+{
+#if PLATFORM_ANDROID || PLATFORM_IOS
+    initOptarClient(TCHAR_TO_ANSI(*serverIpAddress));
 #endif
 }
 
 void UOptarWorker::processArCoreImage(UGoogleARCoreCameraImage *arCoreImage, int &nKeypoints)
 {
-#if PLATFORM_ANDROID
-    if (arCoreImage)
+}
+
+void UOptarWorker::processCameraImage(UARTexture *cameraImageTexture, int &nKeypoints)
+{
+#if PLATFORM_ANDROID || PLATFORM_IOS
+    if (initialized_ && cameraImageTexture)
     {
-        UGoogleARCoreCameraIntrinsics *cameraIntrinsics;
-        EGoogleARCoreFunctionStatus status = UGoogleARCoreFrameFunctionLibrary::GetCameraImageIntrinsics(cameraIntrinsics);
-        
-        if (arCoreImage->GetPlaneCount() == 3  &&
-            status == EGoogleARCoreFunctionStatus::Success)
+
+        FARCameraIntrinsics cameraIntrinsics;
+        // TODO: how often should camera intrinsics be queried? (once at startup?)
+        bool gotIntrinsics = UARBlueprintLibrary::GetCameraIntrinsics(cameraIntrinsics);
+//        UGoogleARCoreCameraIntrinsics *cameraIntrinsics;
+//        EGoogleARCoreFunctionStatus status = UGoogleARCoreFrameFunctionLibrary::GetCameraImageIntrinsics(cameraIntrinsics);
+
+#if 0
+        if (cameraImageTexture->GetPlaneCount() == 3  &&
+            gotIntrinsics)
         {
             CameraIntrinsics ci;
-            
-            cameraIntrinsics->GetFocalLength(ci.focalLengthX_, ci.focalLengthY_);
-            cameraIntrinsics->GetPrincipalPoint(ci.principalPointX_, ci.principalPointY_);
-            cameraIntrinsics->GetImageDimensions(ci.imageWidth_, ci.imageHeight_);
-            
+
+            ci.focalLengthX_ = cameraIntrinsics.FocalLengh.X;
+            ci.focalLengthY_ = cameraIntrinsics.FocalLengh.Y;
+//            cameraIntrinsics->GetFocalLength(ci.focalLengthX_, ci.focalLengthY_);
+            ci.principalPointX_ = cameraIntrinsics.PrincipalPoint.X;
+            ci.principalPointY_ = cameraIntrinsics.PrincipalPoint.Y;
+//            cameraIntrinsics->GetPrincipalPoint(ci.principalPointX_, ci.principalPointY_);
+            ci.imageWidth_ = cameraIntrinsics.ImageResolution.X;
+            ci.imageHeight_ = cameraIntrinsics.ImageResolution.Y;
+//            cameraIntrinsics->GetImageDimensions(ci.imageWidth_, ci.imageHeight_);
+
             int pixStride, rowStride, dataLen;
 //            Point2D *keypoints;
             // here we get pointer to the first plane, hoping that other planes are adjacent to it
             // and form a continuous memory region
+
+            // TODO: how to get texture data from UARTexture*
             uint8_t *yuvData = arCoreImage->GetPlaneData(0, pixStride, rowStride, dataLen);
             optarClient_->processTexture(arCoreImage->GetWidth(), arCoreImage->GetHeight(),
                                          rowStride, yuvData,
@@ -115,8 +141,7 @@ void UOptarWorker::processArCoreImage(UGoogleARCoreCameraImage *arCoreImage, int
                                          true);
 //            GLog->Logf(TEXT("[optar-module] found %d ORB keypoints"), nKeypoints);
         }
-
-        arCoreImage->Release();
+#endif
     }
     else
         GLog->Logf(TEXT("[optar-module] ARCore image is null"));
@@ -126,35 +151,35 @@ void UOptarWorker::processArCoreImage(UGoogleARCoreCameraImage *arCoreImage, int
 
 void UOptarWorker::publishArPose(FTransform pose)
 {
-#if PLATFORM_ANDROID
+#if PLATFORM_ANDROID || PLATFORM_IOS
     FARSessionStatus sessionStatus = UARBlueprintLibrary::GetARSessionStatus();
-    
-    if (sessionStatus.Status == EARSessionStatus::Running)
+
+    if (initialized_ && sessionStatus.Status == EARSessionStatus::Running)
     {
         EARWorldMappingState mappingState = UARBlueprintLibrary::GetWorldMappingStatus();
         EARTrackingQualityReason trackingQualityReason = UARBlueprintLibrary::GetTrackingQualityReason();
-     
+
         if (!arWorldOriginAnchor_)
             GLog->Logf(TEXT("[optar-module] AR session status: %d (%s). mapping state %d. tracking quality %d"),
                        sessionStatus.Status,
                        *sessionStatus.AdditionalInfo,
                        mappingState,
                        trackingQualityReason);
-        
+
         if (mappingState != EARWorldMappingState::NotAvailable && !arWorldOriginAnchor_)
         {
             GLog->Logf(TEXT("[optar-module] initializing world origin tracking"));
 
             arWorldOrigin_ = NewObject<USceneComponent>();
             arWorldOrigin_->AddToRoot();
-            
+
             arWorldOriginAnchor_ = UARBlueprintLibrary::PinComponent(arWorldOrigin_, pose);
-            
+
             if (arWorldOriginAnchor_)
             {
                 onArTransformUpdateDelegate_.AddDynamic(this, &UOptarWorker::onTransformUpdated);
                 arWorldOriginAnchor_->SetOnARTransformUpdated(onArTransformUpdateDelegate_);
-                
+
                 GLog->Logf(TEXT("[optar-module] anchored world origin succesfully"));
             }
             else
@@ -165,7 +190,7 @@ void UOptarWorker::publishArPose(FTransform pose)
         {
 
             FTransform localToTracking = arWorldOriginAnchor_->GetLocalToTrackingTransform();
-            
+
             // transform pose from tracking space to local space of world origin
             pose = pose * localToTracking.Inverse();
 //            pose = localToTracking.Inverse() * pose;
@@ -173,11 +198,11 @@ void UOptarWorker::publishArPose(FTransform pose)
             pose.ScaleTranslation(0.01);
 
             Pose optarPose;
-            
+
             // we need to swap axes because Unreal has Z pointing up and Unity
             // (optar was built for Unity) has Y axis vertical
             // more info https://forums.unrealengine.com/development-discussion/c-gameplay-programming/103787-ue4-coordinate-system-not-right-handed
-            
+
 //            optarPose.position_.x_ = pose.GetLocation().X;
 //            optarPose.position_.y_ = pose.GetLocation().Y;
 //            optarPose.position_.z_ = pose.GetLocation().Z;
@@ -199,45 +224,50 @@ void UOptarWorker::publishArPose(FTransform pose)
 #endif
 }
 
-#if PLATFORM_ANDROID
+#if PLATFORM_ANDROID || PLATFORM_IOS
 void UOptarWorker::debug_textureInfo(UTexture2D *tex)
 {
     int width = tex->GetSizeX();
     int height = tex->GetSizeY();
-    
+
     GLog->Logf(TEXT("[optar-module] texture size %d x %d"), width, height);
-    
+
     if (tex->PlatformData)
     {
         GLog->Logf(TEXT("[optar-module] mips total %d pixel format %d"), tex->PlatformData->Mips.Num(), tex->PlatformData->PixelFormat);
-        
+
         for (int mipIdx = 0; mipIdx < tex->PlatformData->Mips.Num(); ++mipIdx)
         {
             int mipWidth = tex->PlatformData->Mips[mipIdx].SizeX;
             int mipHeight = tex->PlatformData->Mips[mipIdx].SizeY;
-            
+
             GLog->Logf(TEXT("[optar-module] mip %d -- %d x %d"), mipIdx, mipWidth, mipHeight);
         }
     }
 }
 
-void UOptarWorker::initOptarClient()
+void UOptarWorker::initOptarClient(string serverIp)
 {
     Settings s;
     s.showDebugImage_ = true;
-    s.rosMasterUri_ = "http://131.179.142.82:11311";
-    
+
+    char serverAddress[256];
+    memset(serverAddress, 0, 256);
+    sprintf(serverAddress, "http://%s:11311", serverIp.c_str());
+    s.rosMasterUri_ = serverAddress;
+
     char *devId = TCHAR_TO_ANSI(*FGenericPlatformMisc::GetDeviceId());
     s.deviceId_ = (char*)malloc(strlen(devId)+1);
     memset((void*)s.deviceId_, 0, strlen(devId)+1);
     strcpy((char*)s.deviceId_, devId);
-    
+
     // NOTE: this will be called on ROS thread (not main thread)
     s.transformCallback_ = &UOptarWorker::optarOnNewTransform;
     s.userData_ = this;
-    
+
     optarClient_ = make_shared<OptarClient>(s);
-    
+    initialized_ = true;
+
     GLog->Logf(TEXT("[optar-module] OptarClient initialized %x. Settings: %s"),
                optarClient_.get(),
                ANSI_TO_TCHAR(s.toString()));
