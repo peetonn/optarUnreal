@@ -62,8 +62,8 @@ public class optar : ModuleRules
     
     public void LoadOptar(ReadOnlyTargetRules Target)
     {
-        string IncludesPath = Path.Combine(ThirdPartyPath, "optarLibrary", "source");
-        PublicIncludePaths.Add(IncludesPath);
+        PublicIncludePaths.Add(Path.Combine(ThirdPartyPath, "optarLibrary", "include"));
+        PublicIncludePaths.Add(Path.Combine(ThirdPartyPath, "optarLibrary", "src"));
         
         if (Target.Platform == UnrealTargetPlatform.Android)
         {
@@ -75,6 +75,27 @@ public class optar : ModuleRules
                
             PublicLibraryPaths.Add(LibraryPath);
             PublicAdditionalLibraries.Add("optar");
+        }
+        if (Target.Platform == UnrealTargetPlatform.IOS)
+        {
+            
+            string PluginPath = Utils.MakePathRelativeTo(ModuleDirectory, Target.RelativeEnginePath);
+            
+            string LibraryPath = Path.Combine(ThirdPartyPath, "optarLibrary", "ios", "build", "arm64");
+               
+            PublicLibraryPaths.Add(LibraryPath);
+            PublicAdditionalLibraries.Add("optar");
+            PublicAdditionalLibraries.Add("ros");
+            PublicAdditionalLibraries.Add("opencv2");
+            PublicAdditionalLibraries.Add("boost");
+            PublicAdditionalLibraries.Add("log4cxx");
+            PublicAdditionalLibraries.Add("expat");
+            PublicAdditionalLibraries.Add("iconv");
+
+            PublicSystemLibraryPaths.Add("/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/usr/lib/swift/");
+            PublicSystemLibraryPaths.Add("/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift");
+            PublicSystemLibraryPaths.Add("/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos");
+            PublicSystemLibraryPaths.Add("/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/iphoneos");
         }
     }
 }
