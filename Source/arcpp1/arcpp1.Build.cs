@@ -22,7 +22,8 @@ public class arcpp1 : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine",
+        "InputCore", "UElibPNG" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 

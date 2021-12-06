@@ -1,9 +1,9 @@
 {
 	"FileVersion": 3,
 	"Version": 1,
-	"VersionName": "1.0",
+	"VersionName": "2.0",
 	"FriendlyName": "optar",
-	"Description": "OPTAR Android plugin",
+	"Description": "XRAI OPTAR plugin",
 	"Category": "Mobile",
 	"CreatedBy": "Peter Gusev",
 	"CreatedByURL": "",
@@ -17,7 +17,19 @@
 		{
 			"Name": "optar",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"WhitelistPlatforms": [
+				"IOS",
+				"Android",
+				"Mac",
+				"Windows"
+			]
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "AppleARKit",
+			"Enabled": true
 		}
 	]
 }

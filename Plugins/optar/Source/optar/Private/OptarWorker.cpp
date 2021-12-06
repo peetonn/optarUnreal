@@ -9,10 +9,20 @@
 #include "OptarWorker.h"
 #include "ARPin.h"
 #include "ARTypes.h"
+#include "GenericPlatform/GenericPlatformMisc.h"
+
+#if PLATFORM_ANDROID
 #include "GoogleARCoreCameraImage.h"
 #include "GoogleARCoreFunctionLibrary.h"
 #include "GoogleARCoreCameraIntrinsics.h"
-#include "GenericPlatform/GenericPlatformMisc.h"
+#endif
+
+#if PLATFORM_IOS
+#import <CoreVideo/CoreVideo.h>
+#import <CoreImage/CoreImage.h>
+#include "AppleARKitTextures.h"
+#include "RHICommandList.h"
+#endif
 
 #include <stdio.h>
 #include <cstdio>
@@ -88,64 +98,71 @@ UOptarWorker::~UOptarWorker()
 #endif
 }
 
-void UOptarWorker::init(FString serverIpAddress)
+void UOptarWorker::init(FString deviceId, FString serverIpAddress)
 {
 #if PLATFORM_ANDROID || PLATFORM_IOS
-    initOptarClient(TCHAR_TO_ANSI(*serverIpAddress));
+    initOptarClient(TCHAR_TO_ANSI(*deviceId), TCHAR_TO_ANSI(*serverIpAddress));
 #endif
-}
-
-void UOptarWorker::processArCoreImage(UGoogleARCoreCameraImage *arCoreImage, int &nKeypoints)
-{
 }
 
 void UOptarWorker::processCameraImage(UARTexture *cameraImageTexture, int &nKeypoints)
 {
-#if PLATFORM_ANDROID || PLATFORM_IOS
-    if (initialized_ && cameraImageTexture)
+    if (!cameraImageTexture)
     {
-
-        FARCameraIntrinsics cameraIntrinsics;
-        // TODO: how often should camera intrinsics be queried? (once at startup?)
-        bool gotIntrinsics = UARBlueprintLibrary::GetCameraIntrinsics(cameraIntrinsics);
-//        UGoogleARCoreCameraIntrinsics *cameraIntrinsics;
-//        EGoogleARCoreFunctionStatus status = UGoogleARCoreFrameFunctionLibrary::GetCameraImageIntrinsics(cameraIntrinsics);
-
-#if 0
-        if (cameraImageTexture->GetPlaneCount() == 3  &&
-            gotIntrinsics)
-        {
-            CameraIntrinsics ci;
-
-            ci.focalLengthX_ = cameraIntrinsics.FocalLengh.X;
-            ci.focalLengthY_ = cameraIntrinsics.FocalLengh.Y;
-//            cameraIntrinsics->GetFocalLength(ci.focalLengthX_, ci.focalLengthY_);
-            ci.principalPointX_ = cameraIntrinsics.PrincipalPoint.X;
-            ci.principalPointY_ = cameraIntrinsics.PrincipalPoint.Y;
-//            cameraIntrinsics->GetPrincipalPoint(ci.principalPointX_, ci.principalPointY_);
-            ci.imageWidth_ = cameraIntrinsics.ImageResolution.X;
-            ci.imageHeight_ = cameraIntrinsics.ImageResolution.Y;
-//            cameraIntrinsics->GetImageDimensions(ci.imageWidth_, ci.imageHeight_);
-
-            int pixStride, rowStride, dataLen;
-//            Point2D *keypoints;
-            // here we get pointer to the first plane, hoping that other planes are adjacent to it
-            // and form a continuous memory region
-
-            // TODO: how to get texture data from UARTexture*
-            uint8_t *yuvData = arCoreImage->GetPlaneData(0, pixStride, rowStride, dataLen);
-            optarClient_->processTexture(arCoreImage->GetWidth(), arCoreImage->GetHeight(),
-                                         rowStride, yuvData,
-                                         nKeypoints,
-                                         ci,
-                                         true);
-//            GLog->Logf(TEXT("[optar-module] found %d ORB keypoints"), nKeypoints);
-        }
-#endif
+        GLog->Logf(TEXT("[optar-module] camera image texture is invalid"));
+        return ;
     }
-    else
-        GLog->Logf(TEXT("[optar-module] ARCore image is null"));
 
+#if PLATFORM_IOS
+    if (initialized_)
+    {
+        if (cameraImageTexture->GetResource())
+        {
+            FRHITexture2D *tex2D = cameraImageTexture->GetResource()->GetTexture2DRHI();
+
+            GLog->Logf(TEXT("processing camera image. size %dx%d pixel format %d"),
+                        tex2D->GetSizeX(), tex2D->GetSizeY(), tex2D->GetFormat());
+
+            TArray<FColor> outPixels;
+            outPixels.Reset();
+
+            ENQUEUE_RENDER_COMMAND()(
+                [tex2D, &outPixels](FRHICommandListImmediate& RHICmdList){
+                    RHICmdList.ReadSurfaceData(
+                        tex2D,
+                        FIntRect(0, 0, tex2D->GetSizeXY().X, tex2D->GetSizeXY().Y),
+                        outPixels,
+                        FReadSurfaceDataFlags(RCM_UNorm, CubeFace_MAX)
+                    );
+            });
+            FlushRenderingCommands();
+
+            // process image
+            FARCameraIntrinsics cameraIntrinsics;
+            // TODO: how often should camera intrinsics be queried? (once at startup?)
+            if (!UARBlueprintLibrary::GetCameraIntrinsics(cameraIntrinsics))
+                GLog->Logf(TEXT("[optar-module] couldn't retrieve camera intrinsics"));
+            else
+            {
+                CameraIntrinsics ci;
+                ci.focalLengthX_ = cameraIntrinsics.FocalLength.X;
+                ci.focalLengthY_ = cameraIntrinsics.FocalLength.Y;
+                ci.principalPointX_ = cameraIntrinsics.PrincipalPoint.X;
+                ci.principalPointY_ = cameraIntrinsics.PrincipalPoint.Y;
+                ci.imageWidth_ = cameraIntrinsics.ImageResolution.X;
+                ci.imageHeight_ = cameraIntrinsics.ImageResolution.Y;
+
+                optarClient_->processTexture(tex2D->GetSizeX(), tex2D->GetSizeY(),
+                                             outPixels.GetData(),
+                                             nKeypoints,
+                                             ci,
+                                             true);
+                GLog->Logf(TEXT("[optar-module] image processed. found %d ORB keypoints"), nKeypoints);
+            }
+        }
+        else
+            GLog->Logf(TEXT("texture resource is NULL"));
+    }
 #endif
 }
 
@@ -246,24 +263,31 @@ void UOptarWorker::debug_textureInfo(UTexture2D *tex)
     }
 }
 
-void UOptarWorker::initOptarClient(string serverIp)
+void UOptarWorker::initOptarClient(string uuid, string serverIp)
 {
     Settings s;
+    s.rosIp_ = nullptr;
+    s.rosHostname_ = nullptr;
     s.showDebugImage_ = true;
 
-    char serverAddress[256];
+    static char serverAddress[256];
     memset(serverAddress, 0, 256);
-    sprintf(serverAddress, "http://%s:11311", serverIp.c_str());
-    s.rosMasterUri_ = serverAddress;
 
-    char *devId = TCHAR_TO_ANSI(*FGenericPlatformMisc::GetDeviceId());
-    s.deviceId_ = (char*)malloc(strlen(devId)+1);
-    memset((void*)s.deviceId_, 0, strlen(devId)+1);
-    strcpy((char*)s.deviceId_, devId);
+    sprintf(serverAddress, "http://%s:11311", serverIp.c_str());
+    s.rosUri_ = serverAddress;
+
+    static char deviceId[512];
+    memset(deviceId, 0, 512);
+    sprintf(deviceId, "%s", uuid.c_str());
+    // memcpy(deviceId, uuid.c_str(), uuid.size());
+
+    s.deviceId_ = deviceId;
 
     // NOTE: this will be called on ROS thread (not main thread)
     s.transformCallback_ = &UOptarWorker::optarOnNewTransform;
     s.userData_ = this;
+    s.rawImageScaleDownF_ = 4;
+    s.targetFps_ = 2;
 
     optarClient_ = make_shared<OptarClient>(s);
     initialized_ = true;

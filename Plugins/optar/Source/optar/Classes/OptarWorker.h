@@ -33,11 +33,7 @@ public:
     ~UOptarWorker();
 
     UFUNCTION(BlueprintCallable, Category="Optar")
-    void init(FString serverIpAddress);
-
-    UFUNCTION(BlueprintCallable, meta = (DisplayName = "Process ARCore Camera Image", DeprecatedFunction,
-                                         DeprecationMessage="Function has been deprecated, use Process Camera Image"), Category = "Optar")
-    void processArCoreImage(UGoogleARCoreCameraImage *arCoreImage, int &nKeypoints);
+    void init(FString deviceId, FString serverIpAddress);
 
     UFUNCTION(BlueprintCallable, meta = (DisplayName = "Process Camera Image"), Category = "Optar")
     void processCameraImage(UARTexture *cameraImageTexture, int &nKeypoints);
@@ -61,7 +57,7 @@ private:
     static void optarOnNewTransform(const optar::Transform& t, int64_t tsUsec, void *userData);
 
     void debug_textureInfo(UTexture2D *tex);
-    void initOptarClient(std::string serverIp);
+    void initOptarClient(std::string uuid, std::string serverIp);
     void onNewOptarTransform(const optar::Transform& t, int64_t tsUsec);
 #endif
 

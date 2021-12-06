@@ -12,77 +12,83 @@ public class optar : ModuleRules
             return ModuleDirectory;
         }
     }
-        
+
     private string ThirdPartyPath
     {
         get { return Path.GetFullPath(Path.Combine(ModulePath, "../ThirdParty/")); }
     }
-    
-	public optar(ReadOnlyTargetRules Target) : base(Target)
-	{
-		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-		
-		PublicIncludePaths.AddRange(
-			new string[] {
-				// ... add public include paths required here ...
-			});
-				
-		PrivateIncludePaths.AddRange(
-			new string[] {
-				// ... add other private include paths required here ...
-			});
-		
-		PublicDependencyModuleNames.AddRange(
-			new string[]
-			{
-				"Core",
+
+    public optar(ReadOnlyTargetRules Target) : base(Target)
+    {
+        PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+
+        PublicIncludePaths.AddRange(
+            new string[] {
+            });
+
+        PrivateIncludePaths.AddRange(
+            new string[] {
+            });
+
+        PublicDependencyModuleNames.AddRange(
+            new string[]
+            {
+                "Core",
                 "CoreUObject",
                 "Engine",
-				"optarLibrary",
-				"Projects",
-                "AugmentedReality",
-                "GoogleARCoreBase"
-				// ... add other public dependencies that you statically link with here ...
-			});
-			
-		PrivateDependencyModuleNames.AddRange(
-			new string[]
-			{
-				// ... add private dependencies that you statically link with here ...	
-			});
-		
-		DynamicallyLoadedModuleNames.AddRange(
-			new string[]
-			{
-				// ... add any modules that your module loads dynamically here ...
-			});
-        
+                "optarLibrary",
+                "Projects",
+                "AugmentedReality"
+            });
+
+        PrivateDependencyModuleNames.AddRange(
+            new string[]
+            {
+                "RHI"
+            });
+        // add platform-specific dependency modules
+        if (Target.Platform == UnrealTargetPlatform.IOS ||
+            Target.Platform == UnrealTargetPlatform.Mac)
+        {
+            PrivateDependencyModuleNames.AddRange(
+                new string[]
+                {
+                    "AppleARKit",
+                    "AppleImageUtils"
+                });
+        }
+
+        DynamicallyLoadedModuleNames.AddRange(
+            new string[]
+            {
+            });
+
         LoadOptar(Target);
-	}
-    
+    }
+
     public void LoadOptar(ReadOnlyTargetRules Target)
     {
         PublicIncludePaths.Add(Path.Combine(ThirdPartyPath, "optarLibrary", "include"));
         PublicIncludePaths.Add(Path.Combine(ThirdPartyPath, "optarLibrary", "src"));
-        
+
         if (Target.Platform == UnrealTargetPlatform.Android)
         {
-            
+
             string PluginPath = Utils.MakePathRelativeTo(ModuleDirectory, Target.RelativeEnginePath);
             AdditionalPropertiesForReceipt.Add(new ReceiptProperty("AndroidPlugin", Path.Combine(PluginPath, "optar_APL.xml")));
-            
+
             string LibraryPath = Path.Combine(ThirdPartyPath, "optarLibrary", "Android", "libs", "arm64-v8a");
-               
+
             PublicLibraryPaths.Add(LibraryPath);
             PublicAdditionalLibraries.Add("optar");
         }
         if (Target.Platform == UnrealTargetPlatform.IOS)
         {
-            
+
             string PluginPath = Utils.MakePathRelativeTo(ModuleDirectory, Target.RelativeEnginePath);
-            
+
             string LibraryPath = Path.Combine(ThirdPartyPath, "optarLibrary", "ios", "build", "arm64");
-               
+
             PublicLibraryPaths.Add(LibraryPath);
             PublicAdditionalLibraries.Add("optar");
             PublicAdditionalLibraries.Add("ros");
