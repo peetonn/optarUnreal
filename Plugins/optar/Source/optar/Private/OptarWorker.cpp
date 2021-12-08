@@ -299,9 +299,10 @@ void UOptarWorker::initOptarClient(string uuid, string serverIp)
 
 void UOptarWorker::onNewOptarTransform(const Transform& t, int64_t tsUsec)
 {
-    GLog->Logf(TEXT("[optar-module] new OPTAR transform (world -> AR tracking space) received: %dusec [%.2f %.2f %.2f] [%.2f %.2f %.2f %.2f]"),
-               tsUsec, t.position_.x_, t.position_.y_, t.position_.z_,
-               t.rotation_.x_, t.rotation_.y_, t.rotation_.z_, t.rotation_.w_);
+    GLog->Logf(TEXT("[optar-module] new OPTAR transform (world -> AR tracking space) received"));
+    // GLog->Logf(TEXT("[optar-module] new OPTAR transform (world -> AR tracking space) received: %dusec [%.2f %.2f %.2f] [%.2f %.2f %.2f %.2f]"),
+               // tsUsec, t.position_.x_, t.position_.y_, t.position_.z_,
+               // t.rotation_.x_, t.rotation_.y_, t.rotation_.z_, t.rotation_.w_);
 }
 
 #endif
