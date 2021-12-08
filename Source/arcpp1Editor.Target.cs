@@ -9,6 +9,6 @@ public class arcpp1EditorTarget : TargetRules
 	{
 		Type = TargetType.Editor;
 
-		ExtraModuleNames.AddRange( new string[] { "arcpp1" } );
+		ExtraModuleNames.AddRange( new string[] { "arcpp1", "OptMsgs" } );
 	}
 }

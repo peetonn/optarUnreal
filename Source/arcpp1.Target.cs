@@ -9,6 +9,6 @@ public class arcpp1Target : TargetRules
 	{
 		Type = TargetType.Game;
 
-		ExtraModuleNames.AddRange( new string[] { "arcpp1" } );
+		ExtraModuleNames.AddRange( new string[] { "arcpp1", "OptMsgs" } );
 	}
 }
