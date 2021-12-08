@@ -11,8 +11,7 @@ ABasePawn::ABasePawn()
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
-	// bReplicateMovement = true;
-	// SetReplicateMovement(true);
+	SetReplicateMovement(true);
 }
 
 // Called when the game starts or when spawned
@@ -25,7 +24,8 @@ void ABasePawn::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetim
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME_CONDITION(ABasePawn, PawnTransform, COND_SimulatedOnly); //COND_SkipOwner);
+	DOREPLIFETIME(ABasePawn, PawnTransform);
+	// DOREPLIFETIME_CONDITION(ABasePawn, PawnTransform, COND_SkipOwner);
 }
 
 void ABasePawn::OnRep_PawnTransform()
@@ -38,6 +38,7 @@ void ABasePawn::OnRep_PawnTransform()
 void ABasePawn::Server_SetPawnTransform_Implementation(FTransform t)
 {
 	PawnTransform = t;
+	OnRep_PawnTransform(); // why is this needed? shouldn't replication for PawnTransform kick in?
 }
 
 // Called every frame
@@ -45,13 +46,15 @@ void ABasePawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (HasAuthority())
+	if (GetLocalRole() >= ROLE_AutonomousProxy) //HasAuthority())
 	{
+		FTransform t = GetActorTransform();
 		// only update if change is significant
-		if (!GetActorTransform().Equals(PawnTransform, 0.05))
+		if (!FTransform::AreRotationsEqual(t, PawnTransform, 0.01) ||
+			!FTransform::AreTranslationsEqual(t, PawnTransform, 0.05))
 		{
-			PawnTransform = GetActorTransform();
-			Server_SetPawnTransform(GetActorTransform());
+			PawnTransform = t;
+			Server_SetPawnTransform(t);
 		}
 	}
 }

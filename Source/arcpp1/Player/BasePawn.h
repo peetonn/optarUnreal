@@ -3,11 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Pawn.h"
+#include "GameFramework/DefaultPawn.h"
 #include "BasePawn.generated.h"
 
 UCLASS()
-class ARCPP1_API ABasePawn : public APawn
+class ARCPP1_API ABasePawn : public ADefaultPawn
 {
 	GENERATED_BODY()
 

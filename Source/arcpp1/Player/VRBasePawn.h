@@ -7,14 +7,14 @@
 #include "VRBasePawn.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class ARCPP1_API AVRBasePawn : public ABasePawn
 {
 	GENERATED_BODY()
-	
-	
-	
-	
+
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
+		
 };

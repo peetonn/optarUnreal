@@ -22,13 +22,10 @@ void AARBasePawn::BeginPlay()
 void AARBasePawn::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
-
-
 }
 
 // Called to bind functionality to input
 void AARBasePawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
     Super::SetupPlayerInputComponent(PlayerInputComponent);
-
 }

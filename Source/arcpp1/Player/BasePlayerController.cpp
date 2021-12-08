@@ -6,11 +6,13 @@
 ABasePlayerController::ABasePlayerController()
  : APlayerController()
  {
+     bReplicates = true;
  }
 
 ABasePlayerController::ABasePlayerController(const FObjectInitializer& ObjectInitializer)
  : APlayerController(ObjectInitializer)
 {
+    bReplicates = true;
 }
 
 ABasePlayerController::~ABasePlayerController()
