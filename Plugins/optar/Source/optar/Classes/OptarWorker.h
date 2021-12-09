@@ -23,10 +23,10 @@ class UOptarWorker : public UObject {
     GENERATED_BODY()
 
 public:
-    UFUNCTION(BlueprintCallable, meta = (Keywords = "Optar", DisplayName = "Get Optar Version"), Category = "Optar")
+    UFUNCTION(BlueprintCallable, BlueprintPure, meta = (Keywords = "Optar", DisplayName = "Get Optar Version"), Category = "Optar")
     static FString getOptarVersion();
 
-    UFUNCTION(BlueprintCallable, meta = (DisplayName = "Get Singleton"), Category = "Optar")
+    UFUNCTION(BlueprintCallable, BlueprintPure, meta = (DisplayName = "Get Singleton"), Category = "Optar")
     static UOptarWorker* sharedInstance();
 
     UFUNCTION(BlueprintPure, BlueprintCallable, Category = "Optar")
