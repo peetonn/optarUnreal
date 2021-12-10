@@ -22,7 +22,7 @@
 				"IOS",
 				"Android",
 				"Mac",
-				"Windows"
+				"Win64"
 			]
 		}
 	],

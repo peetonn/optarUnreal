@@ -36,7 +36,6 @@ public class optar : ModuleRules
                 "Core",
                 "CoreUObject",
                 "Engine",
-                "optarLibrary",
                 "Projects",
                 "AugmentedReality"
             });
@@ -53,6 +52,7 @@ public class optar : ModuleRules
             PrivateDependencyModuleNames.AddRange(
                 new string[]
                 {
+                    "optarLibrary",
                     "AppleARKit",
                     "AppleImageUtils"
                 });
@@ -63,7 +63,11 @@ public class optar : ModuleRules
             {
             });
 
-        LoadOptar(Target);
+        if (Target.Platform == UnrealTargetPlatform.Android ||
+            Target.Platform == UnrealTargetPlatform.IOS)
+        {
+            LoadOptar(Target);
+        }
     }
 
     public void LoadOptar(ReadOnlyTargetRules Target)

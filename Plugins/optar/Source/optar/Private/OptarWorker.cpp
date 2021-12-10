@@ -29,7 +29,9 @@
 #include <cstring>
 
 using namespace std;
+#if PLATFORM_ANDROID || PLATFORM_IOS
 using namespace optar;
+#endif
 
 extern FString GFilePathBase;
 
@@ -109,7 +111,9 @@ void UOptarWorker::processCameraImage(UARTexture *cameraImageTexture, int &nKeyp
 {
     if (!cameraImageTexture)
     {
+#if PLATFORM_ANDROID || PLATFORM_IOS
         GLog->Logf(TEXT("[optar-module] camera image texture is invalid"));
+#endif
         return ;
     }
 
@@ -307,6 +311,7 @@ void UOptarWorker::onNewOptarTransform(const Transform& t, int64_t tsUsec)
 
 #endif
 
+// TODO: supposedly this is only needed for ARCore (Android)
 void UOptarWorker::onTransformUpdated(const FTransform&)
 {
     GLog->Logf(TEXT("[optar-module] world origin transform updated"));

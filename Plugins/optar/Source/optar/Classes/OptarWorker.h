@@ -8,11 +8,13 @@
 
 #pragma once
 
-#include "optar.hpp"
 #include "ARTextures.h"
 #include "ARBlueprintLibrary.h"
-
 #include <string>
+
+#if PLATFORM_ANDROID || PLATFORM_IOS
+#include "optar.hpp"
+#endif
 
 #include "OptarWorker.generated.h"
 
