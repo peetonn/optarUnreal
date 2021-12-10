@@ -1,3 +1,6 @@
 [submodule "Plugins/ROSBridge2Unreal"]
 	path = Plugins/ROSBridge2Unreal
 	url = https://github.com/peetonn/ROSBridge2Unreal.git
+[submodule "Plugins/DDTools"]
+	path = Plugins/DDTools
+	url = https://github.com/remap/DDTools.git
