@@ -58,4 +58,7 @@ private:
 	ConnectionStatus connectionStatus_;
 
 	void updateConnectionStatus(ConnectionStatus newStatus);
+	
+	void setNetworkVersionOverride();
+	static unsigned int getNetworkVersionGame();
 };

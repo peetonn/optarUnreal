@@ -8,20 +8,31 @@
 #include <Kismet/GameplayStatics.h>
 #include <Engine/LevelStreaming.h>
 
+#include "code-info.h"
+
 #include <string>
 #include <sstream>
 
+using namespace std;
 
 UMainGameInstance::UMainGameInstance()
 :UGameInstance()
 {
     connectionStatus_ = ConnectionStatus::Disconnected;
+    setNetworkVersionOverride();
 }
 
 UMainGameInstance::UMainGameInstance(const FObjectInitializer& ObjectInitializer)
 :UGameInstance(ObjectInitializer)
 {
     connectionStatus_ = ConnectionStatus::Disconnected;
+    setNetworkVersionOverride();
+}
+
+void
+UMainGameInstance::setNetworkVersionOverride()
+{
+    FNetworkVersion::GetLocalNetworkVersionOverride.BindStatic(&UMainGameInstance::getNetworkVersionGame);
 }
 
 UMainGameInstance::~UMainGameInstance()
@@ -126,4 +137,35 @@ UMainGameInstance::updateConnectionStatus(ConnectionStatus newStatus)
         // notify observers
         OnConnectionStatusUpdated.Broadcast(oldStatus, connectionStatus_);
     }
+}
+
+unsigned int
+UMainGameInstance::getNetworkVersionGame()
+{
+    string codeVersion(CODE_COMMIT);
+
+    bool isDirty = false;
+    unsigned int networkVersion = 0;
+    {
+        size_t p = codeVersion.find("-dirty");
+
+        if (p != string::npos)
+        {
+            codeVersion = codeVersion.substr(0, p);
+            isDirty = true;
+        }
+
+        stringstream ss;
+        ss << hex << codeVersion;
+        unsigned int commitHash;
+        ss >> commitHash;
+
+        networkVersion += commitHash;
+    }
+
+    // uncomment this if you want to disable games in uncommitted repo state to connect
+    //if (isDirty)
+    //    networkVersion += 1;
+
+    return networkVersion;
 }
