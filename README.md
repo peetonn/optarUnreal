@@ -7,7 +7,7 @@ Optar plugin uses [Optar C++ library](https://github.com/peetonn/optarLibrary), 
 
 * clone the repo
 ```
-git clone https://github.com/peetonn/optarUnreal
+git clone https://github.com/peetonn/optarUnreal --recursive
 cd optarUnreal
 ```
 
