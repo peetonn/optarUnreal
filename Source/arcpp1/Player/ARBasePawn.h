@@ -3,14 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Player/BasePawn.h"
+#include "Player/MultiplayerPawnComponent.h"
 #include "ARBasePawn.generated.h"
 
 /**
  * Custom class for AR Pawn
  */
 UCLASS()
-class ARCPP1_API AARBasePawn : public ABasePawn
+class ARCPP1_API AARBasePawn : public APawn
 {
 	GENERATED_BODY()
 
@@ -23,6 +23,9 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
+	UPROPERTY(BlueprintReadOnly)
+	UMultiplayerPawnComponent* MultiplayerPawnComponent;
+
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
