@@ -41,7 +41,8 @@ bool UROSMsgTrack::FromData(const ROSData& Message)
 
 FVector UROSMsgTrack::GetPositionAsVector()
 {
-    return FVector(x_, y_, height_);
+    // convert to Unreal (cm)
+    return FVector(x_*100, y_*100, height_*100);
 }
 
 ETrackVisibility UROSMsgTrack::GetVisibility()
