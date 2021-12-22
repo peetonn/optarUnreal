@@ -84,7 +84,11 @@ FString UOptarWorker::getOptarVersion() {
 
 }
 
-UOptarWorker::UOptarWorker() : initialized_(false){
+UOptarWorker::UOptarWorker()
+: status_(OptarStatus::Disconnected)
+, initialized_(false)
+
+{
 #if PLATFORM_ANDROID || PLATFORM_IOS
     GLog->Logf(TEXT("[optar-module] UOptarWorker ctor %x id %d name %s"), this,
                this->GetUniqueID(), (*(this->GetFName().ToString())));
@@ -104,6 +108,7 @@ void UOptarWorker::init(FString deviceId, FString serverIpAddress)
 {
 #if PLATFORM_ANDROID || PLATFORM_IOS
     initOptarClient(TCHAR_TO_ANSI(*deviceId), TCHAR_TO_ANSI(*serverIpAddress));
+    deviceId_ = deviceId;
 #endif
 }
 
@@ -245,6 +250,21 @@ void UOptarWorker::publishArPose(FTransform pose)
 #endif
 }
 
+OptarStatus UOptarWorker::getStatus() const
+{
+    return status_;
+}
+
+FString UOptarWorker::getServerUrl() const
+{
+    return serverUrl_;
+}
+
+FString UOptarWorker::getDeviceId() const
+{
+    return deviceId_;
+}
+
 #if PLATFORM_ANDROID || PLATFORM_IOS
 void UOptarWorker::debug_textureInfo(UTexture2D *tex)
 {
@@ -295,6 +315,8 @@ void UOptarWorker::initOptarClient(string uuid, string serverIp)
 
     optarClient_ = make_shared<OptarClient>(s);
     initialized_ = true;
+    status_ = OptarStatus::Processing;
+    serverUrl_ = FString(serverAddress);
 
     GLog->Logf(TEXT("[optar-module] OptarClient initialized %x. Settings: %s"),
                optarClient_.get(),
@@ -304,9 +326,14 @@ void UOptarWorker::initOptarClient(string uuid, string serverIp)
 void UOptarWorker::onNewOptarTransform(const Transform& t, int64_t tsUsec)
 {
     GLog->Logf(TEXT("[optar-module] new OPTAR transform (world -> AR tracking space) received"));
-    // GLog->Logf(TEXT("[optar-module] new OPTAR transform (world -> AR tracking space) received: %dusec [%.2f %.2f %.2f] [%.2f %.2f %.2f %.2f]"),
-               // tsUsec, t.position_.x_, t.position_.y_, t.position_.z_,
-               // t.rotation_.x_, t.rotation_.y_, t.rotation_.z_, t.rotation_.w_);
+    status_ = OptarStatus::Relocalized;
+
+    FTransform rosToMobileAR(
+        FQuat(t.rotation_.x_, t.rotation_.y_, t.rotation_.z_, t.rotation_.w_),
+        FVector(t.position_.x_, t.position_.y_, t.position_.z_),
+        FVector(1));
+
+    OnNewOptTransformReceived.Broadcast(rosToMobileAR);
 }
 
 #endif
