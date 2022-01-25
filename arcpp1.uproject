@@ -1,6 +1,6 @@
 {
 	"FileVersion": 3,
-	"EngineAssociation": "5.0EA",
+	"EngineAssociation": "5.0",
 	"Category": "",
 	"Description": "",
 	"Modules": [
@@ -12,14 +12,14 @@
 				"Engine"
 			]
 		},
-        {
-            "Name": "OptMsgs",
-            "Type": "Runtime",
-            "LoadingPhase": "Default",
-            "AdditionalDependencies": [
-                "Rosbridge2Unreal"
-            ]
-        }
+		{
+			"Name": "OptMsgs",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Rosbridge2Unreal"
+			]
+		}
 	],
 	"Plugins": [
 		{
@@ -140,7 +140,8 @@
 			"Enabled": true
 		}
 	],
-	"PreBuildSteps": {
+	"PreBuildSteps":
+	{
 		"Mac": [
 			"cd `dirname \"$(ProjectFile)\"` && export GIT_BRANCH=`git rev-parse --abbrev-ref HEAD`",
 			"cd `dirname \"$(ProjectFile)\"` && echo \"#define GIT_BRANCH ${GIT_BRANCH}\" > Source/arcpp1/git-describe.h",
